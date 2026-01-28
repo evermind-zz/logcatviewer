@@ -5,13 +5,8 @@ buildscript {
     }
     dependencies {
         //noinspection UseTomlInstead
-        classpath("com.android.tools.build:gradle:8.12.0")
+        classpath("com.android.tools.build:gradle:8.13.2")
     }
-}
-
-repositories {
-    google()
-    mavenCentral()
 }
 
 plugins {
@@ -25,7 +20,7 @@ android {
         viewBinding = true
     }
 
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 19
