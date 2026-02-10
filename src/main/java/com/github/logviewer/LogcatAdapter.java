@@ -14,6 +14,7 @@ import com.github.logviewer.databinding.LogcatViewerItemLogcatBinding;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 public class LogcatAdapter extends BaseAdapter implements Filterable {
@@ -26,16 +27,18 @@ public class LogcatAdapter extends BaseAdapter implements Filterable {
         mData = new ArrayList<>();
     }
 
-    void append(LogItem item) {
-        synchronized (LogcatAdapter.class) {
-            mData.add(item);
+    void appendList(List<LogItem> newItems) {
+        synchronized (mData) {
+            mData.addAll(newItems);
             if (mFilter != null && mFilteredData != null) {
-                if (!item.isFiltered(mFilter)) {
-                    mFilteredData.add(item);
+                for (LogItem item : newItems) {
+                    if (!item.isFiltered(mFilter)) {
+                        mFilteredData.add(item);
+                    }
                 }
             }
-            notifyDataSetChanged();
         }
+        notifyDataSetChanged();
     }
 
     void clear() {
