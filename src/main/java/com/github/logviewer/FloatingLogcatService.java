@@ -30,15 +30,8 @@ import kotlinx.coroutines.JobKt;
 
 import com.github.logviewer.databinding.LogcatViewerFragmentLogcatBinding;
 
-import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
-import java.util.Scanner;
 import java.util.regex.Pattern;
 
 public class FloatingLogcatService extends Service {
@@ -49,8 +42,10 @@ public class FloatingLogcatService extends Service {
             list.add(pattern.pattern());
         }
         context.startService(new Intent(context, FloatingLogcatService.class)
-                .putStringArrayListExtra("exclude_list", list));
+                .putStringArrayListExtra(LogcatReader.EXCLUDE_LIST_KEY, list));
     }
+
+    private LogcatReader logcatReader = new LogcatReader();
 
     private final ExportLogFileUtils exportLogUtils = new ExportLogFileUtils();
     private final Job serviceJob = JobKt.Job(null);
@@ -95,9 +90,11 @@ public class FloatingLogcatService extends Service {
             mBinding.getRoot().setBackgroundColor(colorWindowBackground);
         }
 
-        List<String> excludeList = intent.getStringArrayListExtra("exclude_list");
-        for (String pattern : excludeList) {
-            mExcludeList.add(Pattern.compile(pattern));
+        List<String> excludeList = intent.getStringArrayListExtra(LogcatReader.EXCLUDE_LIST_KEY);
+        if (excludeList != null) {
+            for (String pattern : excludeList) {
+                mExcludeList.add(Pattern.compile(pattern));
+            }
         }
 
         initViews();
@@ -252,61 +249,13 @@ public class FloatingLogcatService extends Service {
         );
     }
 
-    private Date latestTime;
-
     private void startReadLogcat() {
-        new Thread("logcat-service") {
-            @Override
-            public void run() {
-                super.run();
-                mReading = true;
-                Process process = null;
-                Scanner reader = null;
-                try {
-                    ArrayList<String> cmd = new ArrayList<>(Arrays.asList("logcat", "-v", "threadtime"));
-                    if (latestTime != null) {
-                        SimpleDateFormat sdf = new SimpleDateFormat("MM-dd HH:mm:ss.mmm", Locale.getDefault());
-                        cmd.add("-T");
-                        cmd.add(sdf.format(latestTime));
-                    }
-
-                    process = new ProcessBuilder(cmd).start();
-                    reader = new Scanner(process.getInputStream());
-                    while (mReading && reader.hasNextLine()) {
-                        String line = reader.nextLine();
-                        if (LogItem.IGNORED_LOG.matcher(line).matches()) {
-                            continue;
-                        }
-                        boolean skip = false;
-                        for (Pattern pattern : mExcludeList) {
-                            if (pattern.matcher(line).matches()) {
-                                skip = true;
-                                break;
-                            }
-                        }
-                        if (skip) {
-                            continue;
-                        }
-                        try {
-                            final LogItem item = new LogItem(line);
-                            latestTime = item.time;
-                            if (mBinding != null) mBinding.list.post(() -> mAdapter.append(item));
-                        } catch (ParseException | NumberFormatException | IllegalStateException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } finally {
-                    if (process != null) process.destroy();
-                    if (reader != null) reader.close();
-                    stopReadLogcat();
-                }
-            }
-        }.start();
+        logcatReader.startReadLogcat(mAdapter, mExcludeList, serviceScope);
+        mReading = true;
     }
 
     private void stopReadLogcat() {
+        logcatReader.stopReadLogcat();
         mReading = false;
     }
 }

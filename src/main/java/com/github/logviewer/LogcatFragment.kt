@@ -19,12 +19,6 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.github.logviewer.databinding.LogcatViewerFragmentLogcatBinding
 import kotlinx.coroutines.launch
-import java.io.IOException
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.Scanner
 import java.util.regex.Pattern
 
 class LogcatFragment : Fragment(), Toolbar.OnMenuItemClickListener {
@@ -33,24 +27,23 @@ class LogcatFragment : Fragment(), Toolbar.OnMenuItemClickListener {
         @JvmStatic
         fun newInstance(excludeList: List<Pattern> = emptyList()): LogcatFragment {
             val args = Bundle()
-            args.putStringArrayList("exclude_list", ArrayList(excludeList.map { it.pattern() }))
+            args.putStringArrayList(LogcatReader.EXCLUDE_LIST_KEY, ArrayList(excludeList.map { it.pattern() }))
             val fragment = LogcatFragment()
             fragment.arguments = args
             return fragment
         }
     }
 
+    private val logcatReader = LogcatReader()
     private val exportLogUtils = ExportLogFileUtils()
     private lateinit var binding: LogcatViewerFragmentLogcatBinding
     private val excludeList: MutableList<Pattern> = ArrayList()
     private val adapter = LogcatAdapter()
     private lateinit var launcher: ActivityResultLauncher<Unit>
-    private var reading = false
-    private var latestTime: Date? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        arguments?.getStringArrayList("exclude_list")?.let {
+        arguments?.getStringArrayList(LogcatReader.EXCLUDE_LIST_KEY)?.let {
             for (pattern in it) {
                 excludeList.add(Pattern.compile(pattern))
             }
@@ -119,71 +112,12 @@ class LogcatFragment : Fragment(), Toolbar.OnMenuItemClickListener {
 
     override fun onResume() {
         super.onResume()
-        startReadLogcat()
+        logcatReader.startReadLogcat(adapter, excludeList, lifecycleScope)
     }
 
     override fun onPause() {
         super.onPause()
-        stopReadLogcat()
-    }
-
-    private fun startReadLogcat() {
-        object : Thread("logcat-activity") {
-            override fun run() {
-                super.run()
-                reading = true
-                var process: Process? = null
-                var reader: Scanner? = null
-                try {
-                    val cmd = ArrayList(mutableListOf("logcat", "-v", "threadtime"))
-                    latestTime?.let {
-                        val sdf = SimpleDateFormat("MM-dd HH:mm:ss.mmm", Locale.getDefault())
-                        cmd.add("-T")
-                        cmd.add(sdf.format(it))
-                    }
-                    process = ProcessBuilder(cmd).start()
-                    reader = Scanner(process.inputStream)
-
-                    while (reading && reader.hasNextLine()) {
-                        val line = reader.nextLine()
-                        if (LogItem.IGNORED_LOG.matcher(line).matches()) {
-                            continue
-                        }
-                        var skip = false
-                        for (pattern in excludeList) {
-                            if (pattern.matcher(line).matches()) {
-                                skip = true
-                                break
-                            }
-                        }
-                        if (skip) {
-                            continue
-                        }
-                        try {
-                            val item = LogItem(line)
-                            latestTime = item.time
-                            binding.list.post { adapter.append(item) }
-                        } catch (e: ParseException) {
-                            e.printStackTrace()
-                        } catch (e: NumberFormatException) {
-                            e.printStackTrace()
-                        } catch (e: IllegalStateException) {
-                            e.printStackTrace()
-                        }
-                    }
-                } catch (e: IOException) {
-                    e.printStackTrace()
-                } finally {
-                    process?.destroy()
-                    reader?.close()
-                    stopReadLogcat()
-                }
-            }
-        }.start()
-    }
-
-    private fun stopReadLogcat() {
-        reading = false
+        logcatReader.stopReadLogcat()
     }
 
     override fun onMenuItemClick(item: MenuItem) = when (item.itemId) {
