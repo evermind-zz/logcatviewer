@@ -10,7 +10,6 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Locale;
 
 public class LogItem implements Parcelable {
@@ -22,14 +21,17 @@ public class LogItem implements Parcelable {
     private static final String PRIORITY_ERROR = "E";
     private static final String PRIORITY_FATAL = "F";
 
-    private static final HashMap<String, Integer> LOGCAT_COLORS = new HashMap<String, Integer>() {{
-        put(PRIORITY_VERBOSE, R.color.logcat_verbose);
-        put(PRIORITY_DEBUG, R.color.logcat_debug);
-        put(PRIORITY_INFO, R.color.logcat_info);
-        put(PRIORITY_WARNING, R.color.logcat_warning);
-        put(PRIORITY_ERROR, R.color.logcat_error);
-        put(PRIORITY_FATAL, R.color.logcat_fatal);
-    }};
+    private int getLogColor(String level) {
+        return switch (level) {
+            case PRIORITY_VERBOSE -> R.color.logcat_verbose;
+            case PRIORITY_DEBUG -> R.color.logcat_debug;
+            case PRIORITY_INFO -> R.color.logcat_info;
+            case PRIORITY_WARNING -> R.color.logcat_warning;
+            case PRIORITY_ERROR -> R.color.logcat_error;
+            case PRIORITY_FATAL -> R.color.logcat_fatal;
+            default -> R.color.logcat_grey;
+        };
+    }
 
     private static final ArrayList<String> SUPPORTED_FILTERS = new ArrayList<String>() {{
         add(PRIORITY_VERBOSE);
@@ -56,7 +58,7 @@ public class LogItem implements Parcelable {
 
         processId = logcatItem.getPid();
         threadId = logcatItem.getTid();
-        level = logcatItem.getLevel().name().substring(0, 1);
+        level = logcatItem.getLevel() != null ? logcatItem.getLevel().name().substring(0, 1) : "?";
         tag = logcatItem.getTag();
         content = logcatItem.getMessage();
         origin = (String.format(Locale.ROOT,"%s %5d %5d %s TAG='%s' %s",
@@ -65,7 +67,7 @@ public class LogItem implements Parcelable {
 
     @ColorRes
     int getColorRes() {
-        return LOGCAT_COLORS.get(level);
+        return getLogColor(level);
     }
 
     boolean isFiltered(String filter) {
