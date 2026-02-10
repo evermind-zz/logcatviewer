@@ -12,10 +12,11 @@ import androidx.annotation.Nullable;
 
 import com.github.logviewer.databinding.LogcatViewerItemLogcatBinding;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+
+import static com.github.logviewer.LogItem.LOGCAT_DATE_FORMAT;
 
 public class LogcatAdapter extends BaseAdapter implements Filterable {
 
@@ -138,9 +139,8 @@ public class LogcatAdapter extends BaseAdapter implements Filterable {
         }
 
         void parse(LogItem data) {
-            mBinding.time.setText(String.format(Locale.getDefault(),    "%s %5d %5d TAG='%s'",
-                    new SimpleDateFormat("MM-dd HH:mm:ss.SSS", Locale.ROOT)
-                            .format(data.time), data.processId, data.threadId, data.tag));
+            mBinding.time.setText(String.format(Locale.ROOT, "%s %5d %5d TAG='%s'",
+                    LOGCAT_DATE_FORMAT.format(data.time), data.processId, data.threadId, data.tag));
             mBinding.content.setText(data.content);
             mBinding.level.setText(data.level);
             mBinding.level.setBackgroundResource(data.getColorRes());

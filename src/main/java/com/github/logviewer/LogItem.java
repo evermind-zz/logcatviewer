@@ -40,6 +40,8 @@ public class LogItem implements Parcelable {
         add(PRIORITY_FATAL);
     }};
 
+    public static final SimpleDateFormat LOGCAT_DATE_FORMAT = new SimpleDateFormat("MM-dd HH:mm:ss.SSS", Locale.ROOT);
+
     public Date time;
     public int processId;
     public int threadId;
@@ -51,16 +53,14 @@ public class LogItem implements Parcelable {
     LogItem(LogcatItem logcatItem) throws IllegalStateException, ParseException {
 
         time = new Date(logcatItem.getDate().toEpochMilliseconds());
-        //time = new SimpleDateFormat("MM-dd HH:mm:ss.SSS", Locale.ROOT).parse(timeText);
 
         processId = logcatItem.getPid();
         threadId = logcatItem.getTid();
         level = logcatItem.getLevel().name().substring(0, 1);
         tag = logcatItem.getTag();
         content = logcatItem.getMessage();
-        origin = (String.format(Locale.getDefault(),"%s %5d %5d %s TAG='%s' %s",
-                new SimpleDateFormat("MM-dd HH:mm:ss.SSS", Locale.ROOT)
-                        .format(time), processId, threadId, level, tag, content));
+        origin = (String.format(Locale.ROOT,"%s %5d %5d %s TAG='%s' %s",
+                LOGCAT_DATE_FORMAT.format(time), processId, threadId, level, tag, content));
     }
 
     @ColorRes
