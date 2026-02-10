@@ -1,6 +1,5 @@
 package com.github.logviewer
 
-import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MenuItem
@@ -19,7 +18,6 @@ import androidx.core.view.updatePadding
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.github.logviewer.databinding.LogcatViewerFragmentLogcatBinding
-import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.launch
 import java.io.IOException
 import java.text.ParseException
@@ -42,6 +40,7 @@ class LogcatFragment : Fragment(), Toolbar.OnMenuItemClickListener {
         }
     }
 
+    private val exportLogUtils = ExportLogFileUtils()
     private lateinit var binding: LogcatViewerFragmentLogcatBinding
     private val excludeList: MutableList<Pattern> = ArrayList()
     private val adapter = LogcatAdapter()
@@ -194,38 +193,7 @@ class LogcatFragment : Fragment(), Toolbar.OnMenuItemClickListener {
         }
         R.id.export -> {
             lifecycleScope.launch {
-                val exportedFile = ExportLogFileUtils.exportLogs(
-                    requireContext().externalCacheDir, adapter.data
-                )
-                if (exportedFile == null) {
-                    Snackbar.make(
-                        binding.root,
-                        R.string.logcat_viewer_create_log_file_failed,
-                        Snackbar.LENGTH_SHORT
-                    ).show()
-                } else {
-                    val shareIntent = Intent(Intent.ACTION_SEND)
-                    shareIntent.setType("text/plain")
-                    val uri = LogcatFileProvider.getUriForFile(
-                        requireContext(),
-                        "${requireContext().packageName}.logcat_fileprovider",
-                        exportedFile
-                    )
-                    shareIntent.putExtra(Intent.EXTRA_STREAM, uri)
-                    if (
-                        requireContext().packageManager.queryIntentActivities(
-                            shareIntent, 0
-                        ).isEmpty()
-                    ) {
-                        Snackbar.make(
-                            binding.root,
-                            R.string.logcat_viewer_not_support_on_this_device,
-                            Snackbar.LENGTH_SHORT
-                        ).show()
-                    } else {
-                        startActivity(shareIntent)
-                    }
-                }
+                exportLogUtils.exportLog(requireContext(), adapter.data ,binding.root)
             }
             true
         }

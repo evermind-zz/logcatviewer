@@ -23,6 +23,10 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
 import androidx.annotation.Nullable;
+import kotlinx.coroutines.CoroutineScope;
+import kotlinx.coroutines.Dispatchers;
+import kotlinx.coroutines.Job;
+import kotlinx.coroutines.JobKt;
 
 import com.github.logviewer.databinding.LogcatViewerFragmentLogcatBinding;
 
@@ -47,6 +51,14 @@ public class FloatingLogcatService extends Service {
         context.startService(new Intent(context, FloatingLogcatService.class)
                 .putStringArrayListExtra("exclude_list", list));
     }
+
+    private final ExportLogFileUtils exportLogUtils = new ExportLogFileUtils();
+    private final Job serviceJob = JobKt.Job(null);
+    // Scope for UI interaction Dispatchers.getMain()
+    private final CoroutineScope serviceScope =
+            kotlinx.coroutines.CoroutineScopeKt.CoroutineScope(
+                    Dispatchers.getMain().plus(serviceJob)
+            );
 
     @Nullable
     private LogcatViewerFragmentLogcatBinding mBinding = null;
@@ -100,8 +112,8 @@ public class FloatingLogcatService extends Service {
         if (wm != null && mBinding != null) {
             wm.removeView(mBinding.root);
         }
-
         stopReadLogcat();
+        JobKt.cancel(serviceJob, "Service destroyed", null);
         super.onDestroy();
     }
 
@@ -226,10 +238,12 @@ public class FloatingLogcatService extends Service {
                     if (item.getItemId() == R.id.clear) {
                         mAdapter.clear();
                     } else if (item.getItemId() == R.id.export) {
-                        LogcatReader.exportLog(
-                                mBinding,
-                                mAdapter,
-                                getApplicationContext());
+                        exportLogUtils.exportLog(
+                                getApplicationContext(),
+                                mAdapter.getData(),
+                                mBinding.root,
+                                serviceScope
+                        );
                     } else {
                         return false;
                     }
