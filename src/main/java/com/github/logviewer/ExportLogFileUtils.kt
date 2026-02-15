@@ -20,7 +20,7 @@ class ExportLogFileUtils {
 
     private suspend fun exportLogs(cacheDir: File?, logs: Array<LogItem>?): File? =
         withContext(Dispatchers.IO) {
-            if (cacheDir == null || cacheDir.isFile() || logs.isNullOrEmpty()) {
+            if (cacheDir == null || cacheDir.isFile || logs.isNullOrEmpty()) {
                 null
             } else {
                 val logFilePrefix = Settings.config.logFilePrefix.getPrefix()
@@ -63,9 +63,7 @@ class ExportLogFileUtils {
         logData: Array<LogItem>,
         rootView: View
     ) {
-        val exportedFile = withContext(Dispatchers.IO) {
-            exportLogs(context.externalCacheDir, logData)
-        }
+        val exportedFile = exportLogs(context.externalCacheDir, logData)
 
         if (exportedFile == null) {
             showFeedback(
