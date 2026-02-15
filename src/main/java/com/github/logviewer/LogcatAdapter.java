@@ -43,7 +43,7 @@ public class LogcatAdapter extends BaseAdapter implements Filterable {
     }
 
     void clear() {
-        synchronized (LogcatAdapter.class) {
+        synchronized (mData) {
             mData.clear();
             mFilteredData = null;
             notifyDataSetChanged();
@@ -51,7 +51,7 @@ public class LogcatAdapter extends BaseAdapter implements Filterable {
     }
 
     public LogItem[] getData() {
-        synchronized (LogcatAdapter.class) {
+        synchronized (mData) {
             return mData.toArray(new LogItem[0]);
         }
     }
@@ -91,7 +91,7 @@ public class LogcatAdapter extends BaseAdapter implements Filterable {
         return new Filter() {
             @Override
             protected FilterResults performFiltering(CharSequence constraint) {
-                synchronized (LogcatAdapter.class) {
+                synchronized (mData) {
                     FilterResults results = new FilterResults();
 
                     if (constraint == null) {
