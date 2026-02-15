@@ -1,6 +1,7 @@
 package com.github.logviewer
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -127,7 +128,12 @@ class LogcatFragment : Fragment(), Toolbar.OnMenuItemClickListener {
         }
         R.id.export -> {
             lifecycleScope.launch {
-                exportLogUtils.exportLog(requireContext(), adapter.data ,binding.root)
+                try {
+                    exportLogUtils.exportLog(requireContext(), adapter.data ,binding.root)
+                } catch (e: Exception){
+                    Log.d("LogcatFragment", e.message, e)
+                    e.printStackTrace()
+                }
             }
             true
         }
