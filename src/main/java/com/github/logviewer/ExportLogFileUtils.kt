@@ -1,7 +1,6 @@
 package com.github.logviewer
 
 import android.content.Context
-import android.content.Intent
 import android.view.View
 import android.widget.Toast
 import androidx.annotation.StringRes
@@ -71,23 +70,23 @@ class ExportLogFileUtils {
                 R.string.logcat_viewer_create_log_file_failed,
             )
         } else {
-            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                type = "text/plain"
-                val uri = LogcatFileProvider.getUriForFile(
-                    context,
-                    "${context.packageName}.logcat_fileprovider",
-                    exportedFile
-                )
-                putExtra(Intent.EXTRA_STREAM, uri)
-            }
-            if (context.packageManager.queryIntentActivities(shareIntent, 0).isEmpty()) {
+            val logUri = LogcatFileProvider.getUriForFile(
+                context,
+                "${context.packageName}.logcat_fileprovider",
+                exportedFile
+            )
+            val shareIntent = Settings.config.logFileShare.createIntent(
+                context,
+                logUri,
+                exportedFile.name
+            )
+            val isSharingSupported =
+                Settings.config.logFileShare.launchIntent(context, shareIntent)
+            if (!isSharingSupported) {
                 showFeedback(
                     rootView,
                     R.string.logcat_viewer_not_support_on_this_device
                 )
-            } else {
-                context.startActivity(shareIntent)
             }
         }
     }

@@ -1,5 +1,7 @@
 package com.github.logviewer
 
+import com.github.logviewer.settings.LogFileShare
+import com.github.logviewer.settings.LogFileShareDefault
 import java.io.BufferedWriter
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -45,7 +47,9 @@ data class LogConfig(
             val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault())
             return dateFormat.format(Date())
         }
-    }
+    },
+
+    val logFileShare: LogFileShare = LogFileShareDefault()
 )
 
 /**
