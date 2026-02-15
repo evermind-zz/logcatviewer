@@ -2,11 +2,8 @@ package de.brudaswen.android.logcat.core.parser
 
 import de.brudaswen.android.logcat.core.data.LogcatItem
 import de.brudaswen.android.logcat.core.data.LogcatLevel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 import kotlinx.io.Buffer
-import kotlinx.io.readByteArray
 import kotlinx.io.readIntLe
 import kotlinx.io.readString
 import kotlinx.io.readUShortLe
@@ -23,6 +20,10 @@ public class LogcatBinaryParser(
     private val input: InputStream,
 ) : Closeable by input {
 
+    companion object {
+        const val V1_HEADER_SIZE = 20
+
+    }
     private val buffer = Buffer()
 
     /**
@@ -30,26 +31,43 @@ public class LogcatBinaryParser(
      *
      * @return The parsed [LogcatItem] or `null` if stream reached EOF.
      */
-    public suspend fun parseItem(): LogcatItem? = withContext(Dispatchers.IO) {
+    fun parseItem(): LogcatItem?  {
         val firstByte = input.read()
-        if (firstByte == -1) return@withContext null
+        if (firstByte == -1) return null
 
         // Read v1 header
         buffer.writeByte(firstByte.toByte())
         buffer.write(input = input, byteCount = 19)
 
         val len = buffer.readUShortLe().toInt()
-        val headerSize = buffer.readUShortLe().toInt()
+        var headerSize = buffer.readUShortLe().toInt()
         val pid = buffer.readIntLe()
         val tid = buffer.readIntLe()
         val sec = buffer.readIntLe()
         val nsec = buffer.readIntLe()
+        var euid = -1 // v2/v3
+        var lid = -1  // v3
+
+        headerSize = if (headerSize < V1_HEADER_SIZE) {
+            V1_HEADER_SIZE // V1 has no explicit headerSize field -> it's just padding and mostly zero)
+        } else {
+            headerSize
+        }
 
         // Read additional header fields
-        buffer.write(input = input, byteCount = headerSize - 20L)
+        val additionalHeaderBytes = (headerSize - V1_HEADER_SIZE).coerceAtLeast(0).toLong()
+        if (additionalHeaderBytes > 0) {
+            buffer.write(input = input, byteCount = additionalHeaderBytes)
 
-        val additionalHeaderBytes = (headerSize - 20).coerceAtLeast(0)
-        buffer.readByteArray(byteCount = additionalHeaderBytes)
+            if (additionalHeaderBytes >= 4) euid = buffer.readIntLe()
+            if (additionalHeaderBytes >= 8) lid = buffer.readIntLe()
+
+            // skip remaining if there is any
+            if (additionalHeaderBytes > 8) {
+                buffer.skip(additionalHeaderBytes - 8)
+            }
+        }
+
 
         // Read payload
         buffer.write(input = input, byteCount = len.toLong())
@@ -65,7 +83,7 @@ public class LogcatBinaryParser(
         buffer.clear()
 
         // Convert raw values to item
-        LogcatItem(
+        return LogcatItem(
             sec = sec,
             nsec = nsec,
             priority = priority,
