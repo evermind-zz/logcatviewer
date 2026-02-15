@@ -40,10 +40,20 @@ fun setupCustomLogcatSettings() {
         }
     }
 
+    // overwrite parts of the LogFileShareDefault implementation
+    val customLogFileShare = object : LogFileShareDefault() {
+        override fun launchIntent(context: Context, shareIntent: Intent): Boolean {
+            shareIntent.addFlags(FLAG_ACTIVITY_NEW_TASK)
+            YourShareUtils.openIntent(context, shareIntent)
+            return true // we want to handle error messaging ourselves in YourShareUtils.openIntent()
+        }
+    }
+
     Settings.update { current ->
         current.copy(
             logfileFormat = customLogfileFormat,
-            logFilePrefix = customLogFilePrefix
+            logFilePrefix = customLogFilePrefix,
+            logFileShare = customLogFileShare
         )
     }
 }
