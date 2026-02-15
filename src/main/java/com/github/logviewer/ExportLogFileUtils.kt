@@ -3,6 +3,8 @@ package com.github.logviewer
 import android.content.Context
 import android.content.Intent
 import android.view.View
+import android.widget.Toast
+import androidx.annotation.StringRes
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -66,11 +68,10 @@ class ExportLogFileUtils {
         }
 
         if (exportedFile == null) {
-            Snackbar.make(
+            showFeedback(
                 rootView,
                 R.string.logcat_viewer_create_log_file_failed,
-                Snackbar.LENGTH_SHORT
-            ).show()
+            )
         } else {
             val shareIntent = Intent(Intent.ACTION_SEND).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -82,16 +83,39 @@ class ExportLogFileUtils {
                 )
                 putExtra(Intent.EXTRA_STREAM, uri)
             }
-
             if (context.packageManager.queryIntentActivities(shareIntent, 0).isEmpty()) {
-                Snackbar.make(
+                showFeedback(
                     rootView,
-                    R.string.logcat_viewer_not_support_on_this_device,
-                    Snackbar.LENGTH_SHORT
-                ).show()
+                    R.string.logcat_viewer_not_support_on_this_device
+                )
             } else {
                 context.startActivity(shareIntent)
             }
         }
+    }
+
+    private fun showFeedback(view: View, @StringRes resId: Int) {
+        if (canShowSnackbar(view)) {
+            Snackbar.make(view, resId, Snackbar.LENGTH_LONG).show()
+        } else {
+            // Fallback for Overlays
+            Toast.makeText(view.context.applicationContext, resId, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun canShowSnackbar(view: View): Boolean {
+        if (!view.isAttachedToWindow) return false
+
+        var current: View? = view
+        while (current != null) {
+            // CoordinatorLayout is your best parent
+            if (current is androidx.coordinatorlayout.widget.CoordinatorLayout) return true
+            // the standard root view of an activity
+            if (current.id == android.R.id.content) return true
+
+            val parent = current.parent
+            current = parent as? View
+        }
+        return false
     }
 }
