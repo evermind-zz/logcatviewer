@@ -1,5 +1,6 @@
 package com.github.logviewer
 
+import de.brudaswen.android.logcat.core.data.LogcatItem
 import de.brudaswen.android.logcat.core.parser.LogcatBinaryParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -40,13 +41,16 @@ class LogcatReader {
 
     private fun getLogcatFlow(excludeList: List<Pattern>) = flow {
         val processPid = android.os.Process.myPid()
-        val process = ProcessBuilder("logcat", "-B", "--pid=$processPid").start()
+        val logcatSource = getLogcatSource(processPid)
+        val process = logcatSource.getProcess()
 
         try {
             process.inputStream.buffered().use { inputStream ->
                 LogcatBinaryParser(inputStream).use { parser ->
                     while (currentCoroutineContext().isActive) {
                         val logcatItem = parser.parseItem() ?: break
+                        if (!logcatSource.shouldInclude(logcatItem)) continue
+
                         val item = LogItem(logcatItem)
 
                         if (excludeList.none { it.matcher(item.origin).matches() }) {
