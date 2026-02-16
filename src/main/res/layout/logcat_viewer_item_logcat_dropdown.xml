@@ -7,7 +7,7 @@
     android:ellipsize="marquee"
     tools:text="SurfboardD"
     android:padding="12dp"
-    android:textStyle="normal"
-    android:textSize="14sp"
+    android:textStyle="bold"
+    android:textSize="18sp"
     android:textColor="?android:attr/textColorPrimary"
     android:singleLine="true"/>
