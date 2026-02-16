@@ -1,5 +1,7 @@
 package com.github.logviewer
 
+import com.github.logviewer.settings.CleanupConfig
+import com.github.logviewer.settings.DeleteAllExceptLastStrategy
 import com.github.logviewer.settings.LogFileShare
 import com.github.logviewer.settings.LogFileShareDefault
 import java.io.BufferedWriter
@@ -49,7 +51,11 @@ data class LogConfig(
         }
     },
 
-    val logFileShare: LogFileShare = LogFileShareDefault()
+    val logFileShare: LogFileShare = LogFileShareDefault(),
+    /**
+     *  chosen default strategy delete all except last 10 logs
+     */
+    var logCleanupStrategy: CleanupConfig = CleanupConfig(DeleteAllExceptLastStrategy(), 10)
 )
 
 /**

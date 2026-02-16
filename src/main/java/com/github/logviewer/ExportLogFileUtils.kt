@@ -62,7 +62,11 @@ class ExportLogFileUtils {
         logData: Array<LogItem>,
         rootView: View
     ) {
-        val exportedFile = exportLogs(context.externalCacheDir, logData)
+        val logDir = context.externalCacheDir
+        logDir?.let {
+            Settings.config.logCleanupStrategy.apply(logDir)
+        }
+        val exportedFile = exportLogs(logDir, logData)
 
         if (exportedFile == null) {
             showFeedback(

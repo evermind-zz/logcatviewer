@@ -48,11 +48,22 @@ fun setupCustomLogcatSettings() {
         }
     }
 
+    var customCleanupStrategy: CleanupConfig = CleanupConfig(
+        object : LogFileDeleteStrategy {
+            override fun apply(logDir: File, threshold: Int) {
+                // implement your own strategy. Eg. keep all files with a special keyword.
+                // Or you could also override an existing implementation
+                // from settings/LogFileDeleteStrategy.kt
+            }
+
+        }, 20)
+
     Settings.update { current ->
         current.copy(
             logfileFormat = customLogfileFormat,
             logFilePrefix = customLogFilePrefix,
-            logFileShare = customLogFileShare
+            logFileShare = customLogFileShare,
+            logCleanupStrategy = customCleanupStrategy
         )
     }
 }
