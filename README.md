@@ -11,7 +11,7 @@
 - some typo fixes
 - extract common code into LogcatReader
 
-##### Settings example
+##### code example (1) global library settings
 Define a method to change the default config to your preference
 
 ```kotlin
@@ -73,6 +73,64 @@ fun setupCustomLogcatSettings() {
     }
 }
 ```
+##### code example (2) use LogcatDumper
+If you just want to have the e.g. last 60 seconds before a crash happend you can
+use LogcatDumper like this:
+```kotlin
+class CustomLogcatDumper {
+
+    /**
+     * we want the timestamp to set the filename.
+     */
+    class CustomLogFileNameFromTimestamp : LogcatDumper.LogFileNameFromTimestamp {
+
+        private var timestamp: Long = 0
+
+        override fun getLogFileName(): String {
+            return "custom_${timestamp}.log"
+        }
+
+        override fun setTimestamp(timestamp: Long) {
+            this.timestamp = timestamp
+        }
+    }
+
+    class CustomLogFileFormat : LogFileFormat {
+        override suspend fun writeLogs(
+            logFileName: String,
+            logs: Array<LogItem>,
+            writer: BufferedWriter
+        ) {
+            if (logs.isNotEmpty()) {
+                writer.write("Logcat: $logFileName\n")
+                writer.write("------------------\n")
+                for (log in logs) {
+                    writer.write(log.origin + "\n")
+                }
+            }
+        }
+    }
+
+    companion object {
+        private val logcatDump = LogcatDumper(
+            App.getApplicationContext(), // get the application context from somewhere
+            CustomLogFileNameFromTimestamp(),
+            CustomLogFileFormat(),
+            ExportLogFileUtils.StorageLocation.CACHE_INTERNAL
+        )
+        private const val CAPTURE_PERIOD_BEFORE_TIMESTAMP: Long = 60 * 1000
+
+        fun triggerLogCapture() {
+            val time = System.currentTimeMillis()
+            logcatDump.dump(time, CAPTURE_PERIOD_BEFORE_TIMESTAMP)
+        }
+    }
+}
+
+```
+Now you could just call `CustomLogFileFormat.triggerLogCapture()` to create logfile
+called `${timestamp}.log` containing only the last
+`CAPTURE_PERIOD_BEFORE_TIMESTAMP` logcat entries.
 
 #### Repository
 Releases are distributed via jitpack. Make sure you include jitpack in

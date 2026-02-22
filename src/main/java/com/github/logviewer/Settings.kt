@@ -11,7 +11,11 @@ import java.util.Locale
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * global settings object.
+ * Home of the settings that are used within the library.
+ *
+ * There are two use cases in this library:
+ *  - 1) As global [Settings] Singleton for the standard usage (use as fragment or floating window)
+ *  - 2) And using inside the [LogcatDumper]
  */
 class Settings {
     private val configRef = AtomicReference(LogConfig())
@@ -61,6 +65,8 @@ data class LogConfig(
      *  chosen default strategy delete all except last 10 logs
      */
     var logCleanupStrategy: CleanupConfig = CleanupConfig(DeleteAllExceptLastStrategy(), 10),
+
+    val logOpMode: LogcatReader.OperationMode = LogcatReader.OperationMode.CONTINUE,
 
     val logStorageLocation: ExportLogFileUtils.StorageLocation = ExportLogFileUtils.StorageLocation.CACHE_INTERNAL
 )

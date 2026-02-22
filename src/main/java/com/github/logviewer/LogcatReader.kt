@@ -1,6 +1,5 @@
 package com.github.logviewer
 
-import de.brudaswen.android.logcat.core.data.LogcatItem
 import de.brudaswen.android.logcat.core.parser.LogcatBinaryParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -14,6 +13,10 @@ import kotlinx.coroutines.launch
 import java.util.regex.Pattern
 
 class LogcatReader(val settings: Settings = Settings.Default) {
+    enum class OperationMode {
+        DUMP, /** logcat will dump the whole buffer and exit */
+        CONTINUE /** logcat will be streaming until [LogcatReader.stopReadLogcat] is called */
+    }
 
     private var logcatJob: Job? = null
 
@@ -40,8 +43,7 @@ class LogcatReader(val settings: Settings = Settings.Default) {
     }
 
     private fun getLogcatFlow(excludeList: List<Pattern>) = flow {
-        val processPid = android.os.Process.myPid()
-        val logcatSource = getLogcatSource(processPid)
+        val logcatSource = getLogcatSource(settings.config.logOpMode)
         val process = logcatSource.getProcess()
 
         try {
