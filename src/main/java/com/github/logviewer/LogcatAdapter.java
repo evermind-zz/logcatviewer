@@ -18,7 +18,7 @@ import java.util.Locale;
 
 import static com.github.logviewer.LogItem.LOGCAT_DATE_FORMAT;
 
-public class LogcatAdapter extends BaseAdapter implements Filterable {
+public class LogcatAdapter extends BaseAdapter implements Filterable, LogcatSink {
 
     private final ArrayList<LogItem> mData;
     @Nullable private ArrayList<LogItem> mFilteredData = null;
@@ -28,7 +28,8 @@ public class LogcatAdapter extends BaseAdapter implements Filterable {
         mData = new ArrayList<>();
     }
 
-    void appendList(List<LogItem> newItems) {
+    @Override
+    public void appendList(List<LogItem> newItems) {
         synchronized (mData) {
             mData.addAll(newItems);
             if (mFilter != null && mFilteredData != null) {

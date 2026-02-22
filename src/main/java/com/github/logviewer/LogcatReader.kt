@@ -66,10 +66,18 @@ class LogcatReader(val settings: Settings = Settings.Default) {
     }.flowOn(Dispatchers.IO)
 
 
+    /**
+     * starts the logcat reader process.
+     *
+     * @param logcatSink where to push the collected [LogItem]
+     * @param excludeList exclude some pattern
+     * @param coroutineScope if [logcatSink] is working within the UI, the scope should run on the UI-Thread
+     *
+     */
     fun startReadLogcat(
-        adapter: LogcatAdapter,
+        logcatSink: LogcatSink,
         excludeList: List<Pattern>,
-        coroutineScope: CoroutineScope // should run on the UI-Thread
+        coroutineScope: CoroutineScope
     ) {
         // If an old job is still running, stop it to be on the safe side.
         stopReadLogcat()
@@ -78,8 +86,12 @@ class LogcatReader(val settings: Settings = Settings.Default) {
             getLogcatFlow(excludeList)
                 .chunked(size = 50, timeMillis = 100L)
                 .collect { items ->
-                    adapter.appendList(items)
+                    logcatSink.appendList(items)
                 }
+        } .apply {
+            invokeOnCompletion {
+                logcatSink.onFinish()
+            }
         }
     }
 
