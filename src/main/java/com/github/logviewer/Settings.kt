@@ -3,7 +3,7 @@ package com.github.logviewer
 import android.content.Context
 import com.github.logviewer.ExportLogFileUtils.StorageLocation
 import com.github.logviewer.settings.CleanupConfig
-import com.github.logviewer.settings.DeleteAllExceptLastStrategy
+import com.github.logviewer.settings.KeepLastNFilesStrategy
 import com.github.logviewer.settings.LogFileShare
 import com.github.logviewer.settings.LogFileShareDefault
 import java.io.BufferedWriter
@@ -65,9 +65,9 @@ data class LogConfig(
 
     val logFileShare: LogFileShare = LogFileShareDefault(),
     /**
-     *  chosen default strategy delete all except last 10 logs
+     *  chosen default strategy delete all except last 2 logs
      */
-    var logCleanupStrategy: CleanupConfig = CleanupConfig(DeleteAllExceptLastStrategy(), 10),
+    var logCleanupStrategy: CleanupConfig = CleanupConfig(KeepLastNFilesStrategy(), 2),
 
     val logOpMode: LogcatReader.OperationMode = LogcatReader.OperationMode.CONTINUE,
 

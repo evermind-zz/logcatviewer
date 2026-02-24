@@ -33,20 +33,8 @@ class CleanupConfig(
     val strategy: LogFileDeleteStrategy,
     val threshold: Int = USE_DEFAULT_THRESHOLD
 ) {
-    fun apply(logDir: File) {
+    fun applyStrategy(logDir: File) {
         strategy.apply(logDir, threshold)
-    }
-}
-
-open class DeleteAllExceptLastStrategy : LogFileDeleteStrategy {
-    override fun apply(logDir: File, threshold: Int) {
-        val files = logDir.listFiles { f -> f.extension == "log" } ?: return
-        if (files.size <= 1) return
-
-        // sort by time (newest first) and start deleting with index 1
-        files.sortedByDescending { it.lastModified() }
-            .drop(1)
-            .forEach { it.delete() }
     }
 }
 
