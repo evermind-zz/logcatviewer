@@ -1,17 +1,21 @@
 package com.github.logviewer
 
 import android.content.Context
+import android.util.Log
 import com.github.logviewer.settings.CleanupConfig
 import com.github.logviewer.settings.KeepLastNFilesStrategy
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import java.io.File
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Using logcat to dump log entries to a file for a specific time period.
  *
- * This object can be reused for multiple dumps. It uses [GlobalScope].
+ * - This object can be reused for multiple dumps.
+ * - It uses [GlobalScope].
+ * - It dumps only if no other dump is already ongoing
  *
  * @param context the application context not the context of an activity
  * @param logFileName an implementation that might create logfile name from a timestamp
@@ -35,9 +39,12 @@ class LogcatDumper(
         logStorageLocation
     )
 
+    /** only allow one [dump] to run at a time */
+    private val isCurrentlyDumping = AtomicBoolean(false)
+
     private val logcatReader = LogcatReader(settings)
 
-    private val fileAdapter = LogcatDumpAdapter(context, settings)
+    private val fileAdapter = LogcatDumpAdapter(context, isCurrentlyDumping, settings)
 
     /**
      * expose the relative logFolder as internal Settings object is not visible to user.
@@ -52,9 +59,15 @@ class LogcatDumper(
      * @param timestamp the time when a crash happened since epoch in milliseconds
      * @param captureMsTimePeriodBeforeTimestamp we want only that time period of log
      *                                           entries before a crash happened (in milliseconds)
+     * @return false if logcat dumping is already ongoing. true if dumping started
      */
     @OptIn(DelicateCoroutinesApi::class)
-    fun dump(timestamp: Long, captureMsTimePeriodBeforeTimestamp: Long) {
+    fun dump(timestamp: Long, captureMsTimePeriodBeforeTimestamp: Long) : Boolean {
+        if (!isCurrentlyDumping.compareAndSet(false, true)) {
+            Log.w(javaClass.simpleName, "dump() already active, ignore call.")
+            return false
+        }
+
         try {
             timestamp.also {
                 logFileName.setTimestamp(it)
@@ -64,8 +77,10 @@ class LogcatDumper(
             logcatReader.startReadLogcat(fileAdapter, emptyList(), GlobalScope)
 
         } catch (e: Exception) {
+            isCurrentlyDumping.set(false)
             e.printStackTrace()
         }
+        return true
     }
 
     /**
@@ -97,6 +112,7 @@ class LogcatDumper(
      */
     private class LogcatDumpAdapter(
         private val context: Context,
+        private val isCurrentlyDumping: AtomicBoolean,
         settings: Settings
     ) : LogcatSink {
         /**
@@ -119,6 +135,7 @@ class LogcatDumper(
                     context,
                     allFilteredLogItemsForExportingToFile.toTypedArray()
                 )
+                isCurrentlyDumping.set(false)
             }
         }
     }
