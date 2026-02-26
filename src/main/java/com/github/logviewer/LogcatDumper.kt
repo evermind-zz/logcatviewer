@@ -59,10 +59,15 @@ class LogcatDumper(
      * @param timestamp the time when a crash happened since epoch in milliseconds
      * @param captureMsTimePeriodBeforeTimestamp we want only that time period of log
      *                                           entries before a crash happened (in milliseconds)
+     * @param delayDump wait millis before starting to dump
      * @return false if logcat dumping is already ongoing. true if dumping started
      */
     @OptIn(DelicateCoroutinesApi::class)
-    fun dump(timestamp: Long, captureMsTimePeriodBeforeTimestamp: Long) : Boolean {
+    fun dump(
+        timestamp: Long,
+        captureMsTimePeriodBeforeTimestamp: Long,
+        delayDump: Long = 0
+    ): Boolean {
         if (!isCurrentlyDumping.compareAndSet(false, true)) {
             Log.w(javaClass.simpleName, "dump() already active, ignore call.")
             return false
@@ -74,7 +79,7 @@ class LogcatDumper(
                 fileAdapter.startCaptureLogItemsSinceTime = it - captureMsTimePeriodBeforeTimestamp
             }
 
-            logcatReader.startReadLogcat(fileAdapter, emptyList(), GlobalScope)
+            logcatReader.startReadLogcat(fileAdapter, emptyList(), GlobalScope, delayDump)
 
         } catch (e: Exception) {
             isCurrentlyDumping.set(false)

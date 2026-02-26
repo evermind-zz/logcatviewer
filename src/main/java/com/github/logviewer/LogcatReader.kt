@@ -5,6 +5,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
@@ -14,8 +15,11 @@ import java.util.regex.Pattern
 
 class LogcatReader(val settings: Settings = Settings.Default) {
     enum class OperationMode {
-        DUMP, /** logcat will dump the whole buffer and exit */
-        CONTINUE /** logcat will be streaming until [LogcatReader.stopReadLogcat] is called */
+        /** logcat will dump the whole buffer and exit */
+        DUMP,
+
+        /** logcat will be streaming until [LogcatReader.stopReadLogcat] is called */
+        CONTINUE
     }
 
     private var logcatJob: Job? = null
@@ -74,18 +78,23 @@ class LogcatReader(val settings: Settings = Settings.Default) {
      * @param logcatSink where to push the collected [LogItem]
      * @param excludeList exclude some pattern
      * @param coroutineScope if [logcatSink] is working within the UI, the scope should run on the UI-Thread
+     * @param delayStartInMs wait millis before start reading from logcat
      *
      */
     fun startReadLogcat(
         logcatSink: LogcatSink,
         excludeList: List<Pattern>,
-        coroutineScope: CoroutineScope
+        coroutineScope: CoroutineScope,
+        delayStartInMs: Long = 0
     ) {
         // If an old job is still running, stop it to be on the safe side.
         stopReadLogcat()
 
         logcatJob = coroutineScope.launch {
             try {
+                if (delayStartInMs > 0) {
+                    delay(delayStartInMs)
+                }
                 getLogcatFlow(excludeList)
                     .chunked(size = 50, timeMillis = 100L)
                     .flowOn(Dispatchers.IO)

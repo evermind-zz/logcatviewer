@@ -250,7 +250,7 @@ public class FloatingLogcatService extends Service {
     }
 
     private void startReadLogcat() {
-        logcatReader.startReadLogcat(mAdapter, mExcludeList, serviceScope);
+        logcatReader.startReadLogcat(mAdapter, mExcludeList, serviceScope, 0);
         mReading = true;
     }
 
