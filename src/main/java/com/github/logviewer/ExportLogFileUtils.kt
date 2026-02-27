@@ -9,11 +9,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.BufferedWriter
 import java.io.File
-import java.io.FileOutputStream
-import java.io.IOException
-import java.io.OutputStreamWriter
 
 class ExportLogFileUtils(val settings: Settings = Settings.Default) {
     /**
@@ -30,29 +26,21 @@ class ExportLogFileUtils(val settings: Settings = Settings.Default) {
     private suspend fun writeLogDataToFileInternal(logDir: File?, logs: Array<LogItem>?): File? =
         withContext(Dispatchers.IO) {
             if (logDir == null || logDir.isFile || logs.isNullOrEmpty()) {
-                null
-            } else {
-                val logFile = File(logDir, settings.config.logFileName.getLogFileName())
-                if (logFile.exists() && !logFile.delete()) {
-                    null
-                } else {
-                    try {
-                        val writer = BufferedWriter(
-                            OutputStreamWriter(
-                                FileOutputStream(logFile)
-                            )
-                        )
-
-                        settings.config.logfileFormat.writeLogs(logFile.name, logs, writer)
-
-                        writer.close()
-                        logFile
-                    } catch (e: IOException) {
-                        e.printStackTrace()
-                        null
-                    }
-                }
+                return@withContext null
             }
+
+            val logFile = File(logDir, settings.config.logFileName.getLogFileName())
+
+            if (logFile.exists() && !logFile.delete()) {
+                return@withContext null
+            }
+
+            runCatching {
+                logFile.writeLogsSecurely(logs, settings.config.logfileFormat)
+                logFile
+            }.onFailure { e ->
+                e.printStackTrace()
+            }.getOrNull()
         }
 
     suspend fun writeLogDataToFile(context: Context, logs: Array<LogItem>?): File? {
@@ -131,5 +119,14 @@ class ExportLogFileUtils(val settings: Settings = Settings.Default) {
             current = parent as? View
         }
         return false
+    }
+
+    private fun File.writeLogsSecurely(
+        logs: Array<LogItem>,
+        format: LogFileFormat
+    ) {
+        this.outputStream().bufferedWriter().use { writer ->
+            format.writeLogs(this.name, logs, writer)
+        }
     }
 }
