@@ -77,7 +77,7 @@ class ExportLogFileUtils(val settings: Settings = Settings.Default) {
         } else {
             val logUri = LogcatFileProvider.getUriForFile(
                 context,
-                "${context.packageName}.logcat_fileprovider",
+                LogcatFileProvider.getAuthority(context),
                 exportedFile
             )
             val shareIntent = settings.config.logFileShare.createIntent(

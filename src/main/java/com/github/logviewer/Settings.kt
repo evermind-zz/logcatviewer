@@ -79,7 +79,7 @@ data class LogConfig(
          *
          */
         // it has to be the same folder name as it is defined in 'main/res/xml/logcat_filepaths.xml'
-        const val RELATIVE_LOG_DIR = "logcatviewer_logs"
+        const val RELATIVE_LOG_DIR = "logcat_toolkit_logs"
     }
 
     fun getLogFolder(context: Context): File? {

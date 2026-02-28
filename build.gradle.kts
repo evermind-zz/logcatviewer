@@ -8,12 +8,17 @@ android {
     buildFeatures {
         dataBinding = false
         viewBinding = true
+        buildConfig = true
     }
 
     compileSdk = 36
 
     defaultConfig {
         minSdk = 19
+
+        val logcatToolkitAuthorityPostfix = ".com.github.evermind_zz.logcat_toolkit.provider"
+        manifestPlaceholders["logcatToolkitAuthority"] = "\${applicationId}$logcatToolkitAuthorityPostfix"
+        buildConfigField("String", "LOGCAT_TOOLKIT_AUTHORITY_POSTFIX", "\"$logcatToolkitAuthorityPostfix\"")
     }
 
     buildTypes {

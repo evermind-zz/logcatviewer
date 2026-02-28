@@ -18,7 +18,7 @@
 
         <provider
             android:name="com.github.logviewer.LogcatFileProvider"
-            android:authorities="${applicationId}.logcat_fileprovider"
+            android:authorities="${logcatToolkitAuthority}"
             android:grantUriPermissions="true"
             android:exported="false">
             <meta-data
